@@ -36,27 +36,46 @@ class MockOfflineProvider(BaseLLMProvider):
 
     def generate_with_tools(self, prompt: str, tools_schema: List[Dict[str, Any]], system_prompt: str = "") -> Dict[str, Any]:
         prompt_lower = prompt.lower()
-        
+
         # Mô phỏng nhận diện intent gọi Tool
-        if "sv2026001" in prompt_lower and "đặt lịch" in prompt_lower:
+        if "đăng ký" in prompt_lower and "vé" in prompt_lower:
             return {
                 "type": "tool_call",
-                "tool_name": "schedule_appointment",
-                "arguments": {"student_id": "SV2026001", "datetime_str": "14:00 15/09/2026", "advisor_name": "PGS.TS Nguyễn Văn A"},
-                "thought": "Người dùng yêu cầu đặt lịch hẹn tư vấn cho sinh viên SV2026001. Tôi sẽ gọi tool schedule_appointment."
+                "tool_name": "register_monthly_ticket",
+                "arguments": {
+                    "customer_name": "Nguyễn Văn A",
+                    "customer_type": "sinh viên" if "sinh viên" in prompt_lower else "khách hàng thông thường",
+                    "phone_number": "0900000000",
+                    "ticket_type": "vé tháng sinh viên" if "sinh viên" in prompt_lower else "vé tháng"
+                },
+                "thought": "Người dùng muốn đăng ký vé tháng. Tôi sẽ gọi tool register_monthly_ticket."
             }
-        elif "sv2026001" in prompt_lower or "tra cứu" in prompt_lower:
+        elif "vé" in prompt_lower and ("giá" in prompt_lower or "chính sách" in prompt_lower or "vé tháng" in prompt_lower):
             return {
                 "type": "tool_call",
-                "tool_name": "academic_query",
-                "arguments": {"student_id": "SV2026001"},
-                "thought": "Người dùng muốn tra cứu thông tin học vụ của sinh viên SV2026001. Tôi sẽ gọi tool academic_query."
+                "tool_name": "check_ticket_policy",
+                "arguments": {"ticket_type": "vé tháng sinh viên" if "sinh viên" in prompt_lower else "vé tháng"},
+                "thought": "Người dùng muốn kiểm tra chính sách vé tháng. Tôi sẽ gọi tool check_ticket_policy."
+            }
+        elif "trạm" in prompt_lower:
+            return {
+                "type": "tool_call",
+                "tool_name": "find_bus_stop",
+                "arguments": {"location": "Cầu Giấy"},
+                "thought": "Người dùng muốn tìm trạm VinBus gần một địa điểm. Tôi sẽ gọi tool find_bus_stop."
+            }
+        elif "tuyến" in prompt_lower or "lộ trình" in prompt_lower:
+            return {
+                "type": "tool_call",
+                "tool_name": "search_route",
+                "arguments": {"origin": "Mỹ Đình", "destination": "Hồ Tây"},
+                "thought": "Người dùng muốn tra cứu lộ trình VinBus. Tôi sẽ gọi tool search_route."
             }
         else:
             return {
                 "type": "text",
-                "content": f"[Mock Agent Response]: Xin chào! Quy chế học vụ VinUni yêu cầu sinh viên tích lũy tối thiểu 120 tín chỉ và duy trì GPA trên 2.0 để tốt nghiệp.",
-                "thought": "Câu hỏi chung về quy chế học vụ, trả lời trực tiếp không cần gọi Tool."
+                "content": "[Mock Agent Response]: Xin chào! VinBus là dịch vụ xe buýt điện phục vụ di chuyển nội đô, cung cấp các tuyến cố định, trạm dừng và vé tháng cho hành khách.",
+                "thought": "Câu hỏi chung về VinBus, trả lời trực tiếp không cần gọi Tool."
             }
 
 

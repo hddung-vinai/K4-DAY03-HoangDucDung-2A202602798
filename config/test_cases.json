@@ -1,0 +1,37 @@
+[
+  {
+    "id": "TC01",
+    "type": "direct_query",
+    "question": "VinBus là gì và hiện có những loại dịch vụ nào?",
+    "expected_behavior": "Chatbot trả lời trực tiếp từ System Prompt hoặc knowledge base cơ bản, không cần gọi Tool.",
+    "complexity": "Low"
+  },
+  {
+    "id": "TC02",
+    "type": "single_tool_query",
+    "question": "Hãy tra cứu tuyến VinBus từ Mỹ Đình đến Hồ Tây.",
+    "expected_behavior": "Agent nhận diện nhu cầu tra cứu lộ trình và tự động phát sinh Tool Call 'search_route' với điểm đi là Mỹ Đình và điểm đến là Hồ Tây.",
+    "complexity": "Medium"
+  },
+  {
+    "id": "TC03",
+    "type": "ticket_registration",
+    "question": "Tôi muốn đăng ký vé tháng VinBus.",
+    "expected_behavior": "Agent nhận diện nhu cầu đăng ký vé tháng, kiểm tra chính sách và các thông tin cần thiết, sau đó phát sinh Tool Call 'register_monthly_ticket' khi đã có đủ thông tin.",
+    "complexity": "Medium"
+  },
+  {
+    "id": "TC04",
+    "type": "multi_step_reasoning",
+    "question": "Tôi đang ở Mỹ Đình và muốn đến Hồ Tây. Hãy tìm tuyến VinBus phù hợp nhất cho tôi, cho biết tôi cần lên và xuống ở trạm nào, sau đó tư vấn loại vé tháng phù hợp.",
+    "expected_behavior": "Agent thực hiện chuỗi suy luận đa bước: (1) xác định điểm đi và điểm đến, (2) gọi 'search_route' để tìm tuyến, (3) xác định trạm lên/xuống phù hợp, (4) kiểm tra thông tin và chính sách vé bằng 'check_ticket_policy', sau đó tổng hợp kết quả và đưa ra đề xuất.",
+    "complexity": "High"
+  },
+  {
+    "id": "TC05",
+    "type": "edge_case_handling",
+    "question": "Tôi muốn đi VinBus từ một địa điểm không tồn tại đến Hồ Tây.",
+    "expected_behavior": "Agent nhận kết quả NOT_FOUND từ Tool 'search_route' và đưa ra phản hồi lịch sự, yêu cầu người dùng cung cấp lại địa điểm hoặc đề xuất cách nhập địa điểm khác. Agent không được tự bịa tuyến xe hoặc trạm xe.",
+    "complexity": "Medium"
+  }
+]

@@ -119,19 +119,43 @@ def run_react_agent(user_query: str, provider, mcp_server: MCPAcademicServer) ->
                 
                 # Tổng hợp Final Answer từ kết quả Observation thực tế
                 if obs_data.get("status") == "SUCCESS":
-                    if "data" in obs_data:
-                        d = obs_data["data"]
+                    if tool_name == "search_route" and obs_data.get("type") == "direct":
+                        routes_str = "; ".join(
+                            f"tuyến {r['route_name']} (lên tại {r['boarding_stop']}, xuống tại {r['alighting_stop']}, "
+                            f"giờ hoạt động {r['operating_time']}, tần suất {r['frequency']})"
+                            for r in obs_data.get("routes", [])
+                        )
+                        final_answer = f"Từ {obs_data.get('origin', '')} đến {obs_data.get('destination', '')}, bạn có thể đi {routes_str}."
+                    elif tool_name == "search_route" and obs_data.get("type") == "transfer":
+                        transfer_str = "; ".join(
+                            f"đi tuyến {t['first_route']} rồi chuyển sang tuyến {t['second_route']} tại {t['transfer_stop']}"
+                            for t in obs_data.get("transfer_options", [])
+                        )
+                        final_answer = f"Không có tuyến trực tiếp, bạn cần chuyển tuyến: {transfer_str}."
+                    elif tool_name == "find_bus_stop":
+                        stops_str = "; ".join(
+                            f"{s['name']} (các tuyến: {', '.join(s['routes'])})"
+                            for s in obs_data.get("stops", [])
+                        )
+                        final_answer = f"Các trạm VinBus gần '{obs_data.get('location', '')}': {stops_str}."
+                    elif tool_name == "check_ticket_policy":
+                        p = obs_data.get("policy", {})
                         final_answer = (
-                            f"Kết quả tra cứu cho sinh viên {obs_data.get('student_id', '')} ({d.get('full_name', '')}): "
-                            f"Lớp {d.get('class', '')}, GPA: {d.get('gpa', '')}, Email: {d.get('email', '')}, "
-                            f"Trạng thái: {d.get('status', '')}, Cố vấn: {d.get('advisor', '')}."
+                            f"{p.get('name', '')}: giá {p.get('price', '')} {p.get('currency', '')}, "
+                            f"hiệu lực {p.get('validity', '')}, áp dụng cho {', '.join(p.get('customer_types', []))}. "
+                            f"Giấy tờ cần thiết: {', '.join(p.get('required_documents', []))}."
+                        )
+                    elif tool_name == "register_monthly_ticket":
+                        final_answer = (
+                            f"{obs_data.get('message', '')} Mã đăng ký: {obs_data.get('registration_id', '')}, "
+                            f"loại vé: {obs_data.get('ticket_type', '')}, giá: {obs_data.get('price', '')} {obs_data.get('currency', '')}."
                         )
                     elif "message" in obs_data:
                         final_answer = obs_data["message"]
                     else:
                         final_answer = f"Đã hoàn tất xử lý qua MCP Server: {json.dumps(obs_data, ensure_ascii=False)}"
                 elif obs_data.get("status") == "NOT_FOUND":
-                    final_answer = obs_data.get("message", "Không tìm thấy thông tin sinh viên yêu cầu.")
+                    final_answer = obs_data.get("message", "Không tìm thấy thông tin phù hợp với yêu cầu của bạn.")
                 else:
                     final_answer = f"Phản hồi từ công cụ: {json.dumps(obs_data, ensure_ascii=False)}"
             
@@ -164,7 +188,7 @@ def run_react_agent(user_query: str, provider, mcp_server: MCPAcademicServer) ->
 
 if __name__ == "__main__":
     print("==========================================================")
-    print("🏫 VINUNI AI COURSE - DAY 03 LAB: CHATBOT VS REACT AGENT")
+    print("🚌 VINBUS AI ASSISTANT - DAY 03 LAB: CHATBOT VS REACT AGENT")
     print("==========================================================")
     
     provider = get_llm_provider()
@@ -179,13 +203,14 @@ if __name__ == "__main__":
     if "--interactive" in sys.argv:
         print("🎮 [INTERACTIVE MODE] Trò chuyện trực tiếp với ReAct Agent:")
         print("💡 Gợi ý câu hỏi thử nghiệm:")
-        print("   - Câu hỏi chung: 'Quy chế học vụ VinUni yêu cầu bao nhiêu tín chỉ?'")
-        print("   - Tra cứu học vụ: 'Hãy tra cứu thông tin học vụ của sinh viên SV2026001'")
-        print("   - Đặt lịch hẹn: 'Đặt lịch hẹn tư vấn cho SV2026001 vào 14:00 ngày 15/09/2026'")
+        print("   - Câu hỏi chung: 'VinBus là gì và có những dịch vụ nào?'")
+        print("   - Tra cứu lộ trình: 'Hãy tra cứu tuyến VinBus từ Mỹ Đình đến Hồ Tây'")
+        print("   - Tìm trạm xe: 'Gần Cầu Giấy có trạm VinBus nào không?'")
+        print("   - Đăng ký vé tháng: 'Tôi muốn đăng ký vé tháng sinh viên'")
         print("   - Gõ 'exit' hoặc 'quit' để kết thúc phiên trò chuyện.\n")
         while True:
             try:
-                user_input = input("👤 Sinh viên hỏi: ").strip()
+                user_input = input("👤 Hành khách hỏi: ").strip()
                 if not user_input or user_input.lower() in ["exit", "quit"]:
                     print("👋 Tạm biệt! Kết thúc phiên trò chuyện.")
                     break
@@ -227,7 +252,7 @@ if __name__ == "__main__":
         print("  2. Chạy toàn bộ Test Cases:    python src/app.py --all\n")
         
         sample_query = tests[1]["question"]
-        print(f"--- 🏁 DEMO CHẠY THỬ 1 TEST CASE MẪU (TC02: Tra cứu học vụ) ---")
+        print(f"--- 🏁 DEMO CHẠY THỬ 1 TEST CASE MẪU (TC02: Tra cứu lộ trình VinBus) ---")
         logs = run_react_agent(sample_query, provider, mcp_server)
         save_waterfall_trace(logs)
         print("\n💡 Hãy thử ngay lệnh: python src/app.py --interactive để chat trực tiếp!")
